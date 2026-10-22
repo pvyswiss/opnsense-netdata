@@ -1,0 +1,19 @@
+<model>
+    <mount>//OPNsense/netdata/general</mount>
+    <description>Netdata configuration</description>
+    <version>0.0.1</version>
+    <items>
+        <enabled type="BooleanField">
+            <Default>0</Default>
+            <Required>Y</Required>
+        </enabled>
+        <listen type="HostnameField">
+            <Default>127.0.0.1</Default>
+            <Required>Y</Required>
+        </listen>
+        <port type="PortField">
+            <Default>19999</Default>
+            <Required>Y</Required>
+        </port>
+    </items>
+</model>

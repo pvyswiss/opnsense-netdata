@@ -1,0 +1,30 @@
+Netdata is distributed, real-time, performance and health monitoring
+for systems and applications. It is a highly optimized monitoring agent
+you install on all your systems and containers.
+
+Netdata provides unparalleled insights, in real-time, of everything
+happening on the systems it runs (including web servers, databases,
+applications), using highly interactive web dashboards.
+
+WWW: https://github.com/netdata/netdata
+
+
+Plugin Changelog
+================
+
+1.3
+
+* Maintainership transferred to PVY.swiss (Netdata Partner)
+  Maintainer of record: netdata-opnsense@pvy.swiss
+
+1.2
+
+* Remove MFS support for /var/log
+
+1.1
+
+* Allow listening to IPv6 address
+
+1.0
+
+* Allow to set listening IP and port

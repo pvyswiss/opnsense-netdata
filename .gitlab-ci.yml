@@ -1,0 +1,60 @@
+stages:
+  - validate
+  - drift
+
+# Serial job execution by design (one Docker job at a time).
+#
+# Image note: docker:cli is Alpine-based and ships update-ca-certificates,
+# which runner-injected CA bootstrap requires.
+#
+# Division of labour:
+#   GitLab = light serial validation + drift monitoring (Docker)
+#   GitHub = FreeBSD build + package + release (FreeBSD VM runners)
+
+variables:
+  GIT_DEPTH: "1"
+  # Runner selection is environment-specific — set CI_RUNNER_TAG as a
+  # project/group CI variable (e.g. in GitLab CI/CD settings), not in-repo.
+  CI_RUNNER_TAG: "docker"
+
+# --- validate: syntax/XML checks, serial, Docker ------------------------------
+validate:syntax:
+  stage: validate
+  image: docker:cli
+  tags: [$CI_RUNNER_TAG]
+  before_script:
+    - apk add --no-cache libxml2-utils diffutils bash
+  script:
+    - tools/overlay.sh
+    - find net-mgmt/netdata/src -name '*.xml' -exec xmllint --noout {} +
+    - sh -n net-mgmt/netdata/src/opnsense/scripts/OPNsense/Netdata/setup.sh
+    # Overlay integrity: byte-identical copy
+    - diff -ru .upstream/plugins/net-mgmt/netdata net-mgmt/netdata
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+
+# --- drift: daily scheduled + default-branch pushes ----------------------------
+drift:upstreams:
+  stage: drift
+  image: docker:cli
+  tags: [$CI_RUNNER_TAG]
+  before_script:
+    - apk add --no-cache curl diffutils bash
+  script:
+    - tools/drift-check.sh || DRIFT=$?
+    - tools/monitor/monitor-upstreams.sh > upstream-state.json
+    - |
+      if [ "${DRIFT:-0}" != "0" ]; then
+        echo "Drift or port gap detected (exit ${DRIFT}). Action required."
+        # M3: auto-create issue + MR via API here
+        exit 1
+      fi
+  artifacts:
+    when: always
+    paths: [upstream-state.json]
+    expire_in: 30 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

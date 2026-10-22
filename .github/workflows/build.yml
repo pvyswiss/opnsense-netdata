@@ -1,0 +1,59 @@
+name: FreeBSD build
+
+on:
+  push:
+    branches: [main, devel]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
+
+      - name: Provision FreeBSD 14 VM and build plugin package
+        uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1
+        with:
+          release: "14.2"
+          usesh: true
+          mem: 4096
+          # lint/style targets are defined in the opnsense CORE repo
+          # (plugins/Mk/*.mk .-include ../core/Mk/*.mk) — clone it as
+          # sibling of plugins/. Style tools are exists()-guarded in Mk:
+          # phpcs + pycodestyle; missing = step skips.
+          prepare: |
+            pkg install -y git pkgconf rsync php82 python3 \
+              php82-pear-PHP_CodeSniffer py312-pycodestyle libxml2
+          run: |
+            set -e
+            freebsd-version
+            # Workspace is shared with the VM: copy plugin overlay into VM-local path
+            mkdir -p /tmp/overlay/net-mgmt/netdata
+            rsync -a "$GITHUB_WORKSPACE/net-mgmt/netdata/" /tmp/overlay/net-mgmt/netdata/
+            # Clone both repos as siblings (Mk cross-references ../core);
+            # PLUGINSDIR=/tmp/plugins means ../core = /tmp/core — correct layout
+            git clone --depth 1 https://github.com/opnsense/plugins.git /tmp/plugins
+            git clone --depth 1 https://github.com/opnsense/core.git /tmp/core
+            rm -rf /tmp/plugins/net-mgmt/netdata
+            cp -R /tmp/overlay/net-mgmt/netdata /tmp/plugins/net-mgmt/netdata
+            cd /tmp/plugins/net-mgmt/netdata
+            make lint
+            make style
+            # Package: installs PLUGIN_DEPENDS (netdata) from OPNsense repos
+            # via pkg — needs network access to pkg.opnsense.org, fine on GH runners
+            make package || { echo "::warning::make package failed (pkg repo unreachable or dep issue) — lint/style results remain valid"; exit 0; }
+            ls -l *.txz
+            # Copy result back to shared workspace for artifact upload
+            cp *.txz "$GITHUB_WORKSPACE/"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: os-netdata-plugin-package
+          path: "*.txz"
+          retention-days: 30
+          if-no-files-found: error

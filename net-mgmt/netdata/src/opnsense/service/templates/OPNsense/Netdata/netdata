@@ -1,0 +1,6 @@
+{% if helpers.exists('OPNsense.netdata.general.enabled') and OPNsense.netdata.general.enabled == '1' %}
+netdata_setup="/usr/local/opnsense/scripts/OPNsense/Netdata/setup.sh"
+netdata_enable="YES"
+{% else %}
+netdata_enable="NO"
+{% endif %}

@@ -1,0 +1,20 @@
+# Upstream reference checkout (never committed)
+.upstream/
+
+# macOS
+.DS_Store
+
+# Build artifacts
+*.txz
+*.pkg
+dist/
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+
+# Secrets — must never be committed
+.env
+*.pem
+*.key

@@ -1,0 +1,21 @@
+name: Upstream drift monitor (mirror-side)
+
+on:
+  schedule:
+    - cron: "17 4 * * *"   # daily, offset from GitLab schedule
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check upstream drift
+        run: |
+          tools/monitor/monitor-upstreams.sh > upstream-state.json || true
+          cat upstream-state.json
+          # Wrapper drift needs a git clone — use overlay + diff
+          tools/overlay.sh
+          if ! diff -ru .upstream/plugins/net-mgmt/netdata net-mgmt/netdata; then
+            echo "::warning::Wrapper drift vs opnsense/plugins master detected"
+          fi
