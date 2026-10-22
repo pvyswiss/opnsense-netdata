@@ -43,12 +43,11 @@ jobs:
             cd /tmp/plugins/net-mgmt/netdata
             make lint
             make style
-            # Package: installs PLUGIN_DEPENDS (netdata) from OPNsense repos
-            # via pkg — needs network access to pkg.opnsense.org, fine on GH runners
-            make package || { echo "::warning::make package failed (pkg repo unreachable or dep issue) — lint/style results remain valid"; exit 0; }
-            ls -l *.txz
+            make package
+            # pkg create output lands in work/pkg/ (Mk/defaults.mk: PKGDIR)
+            ls -l work/pkg/*.txz
             # Copy result back to shared workspace for artifact upload
-            cp *.txz "$GITHUB_WORKSPACE/"
+            cp work/pkg/*.txz "$GITHUB_WORKSPACE/"
 
       - name: Upload package artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
