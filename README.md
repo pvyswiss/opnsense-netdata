@@ -74,7 +74,7 @@ manual-gated.
 ## Side note
 The FreeBSD community's Freshport is constantly falling behind.
 Since Netdata not only provides monitoring for OPNsense but also essential insights
-and analyses for Threat Detection and Analyzis, this is very concerning. Or in ahort:
+and analyses for Threat Detection and Analyzis, this is very concerning. Or in short:
 an absolutely **No-Go**. Of course we know, what it means. But also how to prioritize.
 FreeBSD was always about Security First, so kindly follow the Principles. 
 
