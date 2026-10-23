@@ -13,6 +13,15 @@ VM=freebsd15
 
 limactl list | grep -q "$VM.*Running" || limactl start "$VM"
 
+# Toolchain guard: VM may have been factory-reset (GUI restart semantics);
+# provision blocks restore it at instance creation, but check fast & advise.
+if ! limactl shell "$VM" -- sh -c 'command -v phpcs >/dev/null && command -v gmake >/dev/null' 2>/dev/null; then
+    echo "ERROR: build toolchain missing in VM (phpcs/gmake)." >&2
+    echo "       Recreate the instance: limactl delete -f $VM && limactl start freebsd15.yaml" >&2
+    echo "       (provision blocks re-install the toolchain)" >&2
+    exit 1
+fi
+
 # Ship plugin tree into VM (mounts are read-only for ~; build-output is the write path)
 limactl cp -r "$REPO_ROOT/net-mgmt" "$VM":/tmp/plugin-import
 
