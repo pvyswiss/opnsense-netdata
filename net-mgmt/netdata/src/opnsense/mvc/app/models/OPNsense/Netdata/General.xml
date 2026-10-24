@@ -1,7 +1,7 @@
 <model>
     <mount>//OPNsense/netdata/general</mount>
     <description>Netdata configuration</description>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <items>
         <enabled type="BooleanField">
             <Default>0</Default>
@@ -15,5 +15,17 @@
             <Default>19999</Default>
             <Required>Y</Required>
         </port>
+        <logshipperEnabled type="BooleanField">
+            <Default>0</Default>
+            <Required>Y</Required>
+        </logshipperEnabled>
+        <logshipperHost type="HostnameField">
+            <Default></Default>
+            <Required>N</Required>
+        </logshipperHost>
+        <logshipperPort type="PortField">
+            <Default>6514</Default>
+            <Required>Y</Required>
+        </logshipperPort>
     </items>
 </model>

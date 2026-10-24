@@ -17,4 +17,22 @@
         <type>text</type>
         <help>Set the port to listen to.</help>
     </field>
+    <field>
+        <id>general.logshipperEnabled</id>
+        <label>Enable Netdata Logshipper</label>
+        <type>checkbox</type>
+        <help>Ships firewall logs to Netdata Cloud for unified analysis (Logs tab beside Events). Requires a Netdata Logshipper receiver endpoint, e.g. otel-logship with syslog TLS.</help>
+    </field>
+    <field>
+        <id>general.logshipperHost</id>
+        <label>Logshipper Host</label>
+        <type>text</type>
+        <help>Hostname or IP of the logshipper receiver (e.g. otel-logship.pvy.swiss).</help>
+    </field>
+    <field>
+        <id>general.logshipperPort</id>
+        <label>Logshipper Port</label>
+        <type>text</type>
+        <help>TLS syslog port of the receiver (default 6514).</help>
+    </field>
 </form>
