@@ -48,6 +48,89 @@ tools/
   locally use a FreeBSD 14 Lima VM with `git` + `pkg`
 - For deploy: OPNsense lab gateway (see `tools/deploy-lab.sh` header)
 
+## Manual Deployment Instructions
+
+Until the plugin arrives in the OPNsense Upstream Package Manager, you can
+deploy this version already. The `.pkg` artifacts are attached to every
+[GitHub Release](https://github.com/pvyswiss/opnsense-netdata/releases)
+(built on FreeBSD 14 by CI).
+
+### Requirements
+
+- OPNsense CE or EE firewall (recent 25.x/26.x)
+- Access to the OPNsense web GUI **or** SSH from the LAN
+- `root` user (SSH with shell access, or GUI + shell session)
+- ~10 MB free disk space
+
+### Option A — GUI (recommended)
+
+**Step 1 — Download the package**
+
+Download `os-netdata-devel-<version>.pkg` from the latest
+[Release](https://github.com/pvyswiss/opnsense-netdata/releases) to your
+workstation (e.g. `~/Downloads`).
+
+**Step 2 — Upload and install**
+
+- System → Firmware → **Manual Update** (or *Plugins → Manual Upload* on
+  older releases)
+- Type: *Local* — select the downloaded `.pkg`
+- Click **Upgrade / Install** and confirm
+
+The plugin appears under **Services → Netdata** after installation.
+
+**Step 3 — Install the agent and start**
+
+SSH into the firewall (menu option `8` for the shell) and run:
+
+```sh
+pkg install -y netdata
+/usr/local/opnsense/scripts/OPNsense/Netdata/setup.sh
+/usr/local/etc/rc.d/netdata enable
+/usr/local/etc/rc.d/netdata start
+```
+
+**Step 4 — Enable and claim**
+
+- Services → Netdata → General: check **Enable**, set a listen address
+  reachable from your LAN (e.g. the LAN IP), Save
+- To stream to [Netdata Cloud](https://app.netdata.cloud): sign up, create
+  a room, and claim the node — Cloud UI → *Nodes → Add* → run the
+  displayed claim command on the firewall
+
+### Option B — CLI (SSH)
+
+```sh
+# 1. Fetch the latest release package (adjust version)
+fetch -o /tmp/os-netdata-devel-1.2_3.pkg \
+  https://github.com/pvyswiss/opnsense-netdata/releases/latest/download/os-netdata-devel-1.2_3.pkg
+
+# 2. Install plugin + agent from the OPNsense repo
+pkg add -f /tmp/os-netdata-devel-1.2_3.pkg
+pkg install -y netdata
+
+# 3. Prepare runtime dirs and enable the service
+/usr/local/opnsense/scripts/OPNsense/Netdata/setup.sh
+/usr/local/etc/rc.d/netdata enable
+/usr/local/etc/rc.d/netdata start
+```
+
+Then enable + configure under **Services → Netdata → General** (Option A,
+Step 4).
+
+### Rollback
+
+```sh
+pkg remove -y os-netdata-devel os-netdata   # remove our build
+pkg install -y os-netdata                    # restore the stock plugin (if desired)
+```
+
+> **Note on the agent version**: the Netdata agent itself comes from the
+> FreeBSD port via the OPNsense repository — it may lag behind the latest
+> Netdata release. The plugin tracks the agent version of your OPNsense
+> installation; upstream agent freshness is tracked in this repo's
+> monitoring (see *Lab & Release Pipeline* below).
+
 ## Development
 
 ```sh
