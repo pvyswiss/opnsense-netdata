@@ -3,8 +3,12 @@ name: FreeBSD build
 on:
   push:
     branches: [main, devel]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write   # required for release upload on tag builds
 
 jobs:
   build:
@@ -34,8 +38,7 @@ jobs:
             # Workspace is shared with the VM: copy plugin overlay into VM-local path
             mkdir -p /tmp/overlay/net-mgmt/netdata
             rsync -a "$GITHUB_WORKSPACE/net-mgmt/netdata/" /tmp/overlay/net-mgmt/netdata/
-            # Clone both repos as siblings (Mk cross-references ../core);
-            # PLUGINSDIR=/tmp/plugins means ../core = /tmp/core — correct layout
+            # Clone both repos as siblings (Mk cross-references ../core)
             git clone --depth 1 https://github.com/opnsense/plugins.git /tmp/plugins
             git clone --depth 1 https://github.com/opnsense/core.git /tmp/core
             rm -rf /tmp/plugins/net-mgmt/netdata
@@ -44,11 +47,14 @@ jobs:
             make lint
             make style
             make package
-            # Locate the built package (pkg create -o target dir) and
-            # copy it back to the shared workspace for artifact upload
-            PKG_FILE=$(find /tmp/plugins -name 'os-netdata*.txz' -o -name 'os-netdata*.pkg' | head -1)
+            # Locate the built package and copy it back to the shared
+            # workspace for artifact upload / release
+            PKG_FILE=$(find /tmp/plugins -name 'os-netdata*.pkg' -o -name 'os-netdata*.txz' | head -1)
             echo "Built package: ${PKG_FILE}"
             cp "$PKG_FILE" "$GITHUB_WORKSPACE/"
+            # SBOM material: full package manifest for audit (kept private,
+            # never attached to the public release — see SECURITY.md)
+            /usr/sbin/pkg info -a -f "$PKG_FILE" > "$GITHUB_WORKSPACE/sbom-pkg-manifest.txt" 2>/dev/null || true
 
       - name: Upload package artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -57,3 +63,21 @@ jobs:
           path: "os-netdata*.*"
           retention-days: 30
           if-no-files-found: error
+
+      - name: Upload SBOM manifest (internal, GitLab-only)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sbom-manifest-internal
+          path: "sbom-pkg-manifest.txt"
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Create GitHub Release (tag builds only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          files: os-netdata*.pkg
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

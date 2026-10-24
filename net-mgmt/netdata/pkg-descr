@@ -16,9 +16,10 @@ Plugin Changelog
 
 * Maintainership transferred to PVY.swiss (Netdata Partner)
   Maintainer of record: netdata-opnsense@pvy.swiss
+* Package revision 2: first PVY-managed release, built and signed
+  via PVY CI pipeline (FreeBSD 14)
 
 1.2
-
 * Remove MFS support for /var/log
 
 1.1
