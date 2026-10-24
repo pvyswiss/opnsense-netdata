@@ -15,9 +15,9 @@ UPSTREAM_COMMIT=$(curl -fsS \
     "https://api.github.com/repos/opnsense/plugins/commits?path=net-mgmt/netdata&per_page=1" \
     | sed -n 's/.*"sha": "\([0-9a-f]*\)".*/\1/p' | head -1)
 
-# Latest Netdata release
+# Latest Netdata release (v prefix stripped for comparability)
 NETDATA_RELEASE=$(curl -fsS https://api.github.com/repos/netdata/netdata/releases/latest \
-    | sed -n 's/.*"tag_name": "\([^"]*\)".*/\1/p')
+    | sed -n 's/.*"tag_name": "v\([^"]*\)".*/\1/p')
 
 # FreeBSD port version (ports git repo — authoritative, avoids flaky mirrors)
 PORT_VERSION=$(curl -fsS "https://cgit.freebsd.org/ports/plain/net-mgmt/netdata/Makefile" \

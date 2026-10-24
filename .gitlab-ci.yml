@@ -38,21 +38,25 @@ validate:syntax:
 drift:upstreams:
   stage: drift
   image: docker:cli
-  tags: [$CI_RUNNER_TAG]
+  tags: [pvyvault-runner]
   before_script:
     - apk add --no-cache curl diffutils bash
   script:
-    - tools/drift-check.sh || DRIFT=$?
+    # State snapshot (always)
     - tools/monitor/monitor-upstreams.sh > upstream-state.json
+    # Port-gap standing advisory (updates issue #port-gap, never fails pipeline)
+    - GITLAB_API="https://git.quadcom.ch/api/v4" PROJECT_ID=274 tools/port-gap-issue.sh upstream-state.json || true
+    # Wrapper drift detection: actionable = pipeline issue + GitLab issue
     - |
-      if [ "${DRIFT:-0}" != "0" ]; then
-        echo "Drift or port gap detected (exit ${DRIFT}). Action required."
-        # M3: auto-create issue + MR via API here
+      if ! tools/drift-check.sh > drift.log 2>&1; then
+        cat drift.log
+        GITLAB_API="https://git.quadcom.ch/api/v4" PROJECT_ID=274 tools/drift-issue.sh drift.log
         exit 1
       fi
+    - cat drift.log
   artifacts:
     when: always
-    paths: [upstream-state.json]
+    paths: [upstream-state.json, drift.log]
     expire_in: 30 days
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
